@@ -58,5 +58,5 @@ First release of the fork of [fg-data-profiling](https://github.com/Data-Centric
 - Usage analytics: no request is sent to packages.ydata.ai.
 - The `ydata_profiling` compatibility package.
 
-[unreleased]: https://github.com/andrewadlof/polars-data-profiling/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/andrewadlof/polars-data-profiling/releases/tag/v0.1.0
+[unreleased]: https://github.com/andrewadlof/polars-data-profiling/compare/v0.1.0...HEAD
