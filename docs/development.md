@@ -42,7 +42,9 @@ uv run just tag
 ```
 
 `.github/workflows/release.yml` builds the sdist and wheel, checks that the tag matches the package version and that the
-wheel profiles a frame in a clean environment, then publishes to PyPI through Trusted Publishing. The `pypi` environment
+wheel profiles a frame in a clean environment, then publishes to PyPI through Trusted Publishing. After the upload, it
+creates the GitHub release with the same files, using the version's section of `CHANGELOG.md` as the notes
+(`scripts/release_notes.py`), so that section must exist before tagging. The `pypi` environment
 must first be registered as a trusted publisher of the project on PyPI (Publishing, then "Add a new pending publisher" for
 the first release), with the repository `andrewadlof/polars-data-profiling` and the workflow `release.yml`.
 
