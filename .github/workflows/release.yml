@@ -1,4 +1,6 @@
-# Builds the sdist and the (pure Python) wheel and publishes them to PyPI.
+# Builds the sdist and the (pure Python) wheel, publishes them to PyPI, then
+# creates the GitHub release with the same files and the version's notes from
+# CHANGELOG.md (scripts/release_notes.py).
 #
 # Triggered by pushing a v* tag. `workflow_dispatch` runs the same build but
 # skips publishing, so the build can be rehearsed without burning a version
@@ -69,3 +71,33 @@ jobs:
           name: dist
           path: dist
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: GitHub release
+    needs: [publish]
+    # After PyPI accepted the files, so the release never advertises a version
+    # that failed to publish.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Release notes from CHANGELOG.md
+        run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" > notes.md
+      # Creates the release, or updates it when the job is re-run.
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file notes.md --latest
+          fi
