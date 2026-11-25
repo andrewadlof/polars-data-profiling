@@ -1,0 +1,26 @@
+polars-data-profiling
+Copyright 2026 Drew Adlof and polars-data-profiling contributors
+
+This project is a fork of fg-data-profiling
+(https://github.com/Data-Centric-AI-Community/fg-data-profiling), previously
+published as ydata-profiling and pandas-profiling. It is distributed under the
+same MIT License (see LICENSE), which keeps the original copyright notices:
+
+  Copyright (c) 2016 Jos Polfliet
+  Copyright (c) 2019-2021 Simon Brugman
+  Copyright (c) 2022-Present YData Labs Inc
+
+The report templates, the HTML/widget presentation layer, the native SVG chart
+renderer, the configuration model and the type-inference framework come from
+that project. The statistics engine was rewritten on Polars LazyFrames, and the
+pandas and Spark backends were removed.
+
+The type-inference design (a tree of identity relations plus inference
+relations walked from a generic root type) follows visions
+(https://github.com/dylan-profiler/visions) by Ian Eaves and Simon Brugman.
+
+The augmented Dickey-Fuller p-values use the response-surface regression
+coefficients of MacKinnon (1994, 2010), as published in statsmodels
+(BSD-3-Clause, https://github.com/statsmodels/statsmodels).
+
+Not affiliated with or endorsed by YData Labs Inc.

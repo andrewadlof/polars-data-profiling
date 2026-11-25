@@ -1,88 +1,71 @@
+# Builds the sdist and the (pure Python) wheel and publishes them to PyPI.
+#
+# Triggered by pushing a v* tag. `workflow_dispatch` runs the same build but
+# skips publishing, so the build can be rehearsed without burning a version
+# number: PyPI releases are immutable, so a broken release can only be yanked.
+#
+# Publishing uses PyPI Trusted Publishing (OIDC): there is no API token to
+# store, but the `pypi` environment must be registered as a trusted publisher
+# for this repository and workflow.
+# https://docs.pypi.org/trusted-publishers/
 name: Release
-
-
 on:
-  release:
-    types:
-    - released
-
-permissions:
-  contents: write
-
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions: {}
 jobs:
-  package:
-    name: Build and Package
-    runs-on: ubuntu-24.04
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Version
-      id: version
-      run: echo "value=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
-
-    - name: Setup Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-      
-    - uses: actions/cache@v4
-      name: Cache pip dependencies
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install build
-        python -m pip install ".[dev]"
-    
-    - name: Install
-      run: make install
-    
-    - name:  Build package
-      run: make package version=${{ steps.version.outputs.value }}
-
-    - name: Upload Pipeline Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        retention-days: 1
-        name: built-artifacts
-        path: dist/
-
-  upload-assets:
-    name: Upload Assets to Release
-    runs-on: ubuntu-24.04
-
-    needs: package
-
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: built-artifacts
-        path: dist/
-
-    - uses: AButler/upload-release-assets@v3.0
-      with:
-        files: "dist/*"
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        release-tag: ${{ needs.package.outputs.version }}
-  
-  publish-pypi:
-    name: Publish packages to PyPi
-    runs-on: ubuntu-24.04
-    needs: package
+  build:
+    name: Build
+    runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: built-artifacts
-        path: dist/
-    - uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist/
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: The tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="$(uv version --short)"
+          if [ "v$version" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match the package version $version" >&2
+            exit 1
+          fi
+      - name: Build sdist and wheel
+        run: uv build
+      - name: The wheel installs and profiles without pandas
+        run: |
+          uv venv /tmp/clean --python 3.12
+          uv pip install --python /tmp/clean/bin/python dist/*.whl
+          /tmp/clean/bin/python -c "
+          import importlib.util, polars as pl
+          from polars_data_profiling import ProfileReport
+          assert importlib.util.find_spec('pandas') is None
+          ProfileReport(pl.DataFrame({'a': [1, 2, 3]}), progress_bar=False).to_html()
+          print('ok')
+          "
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  publish:
+    name: Publish to PyPI
+    needs: [build]
+    # Only a pushed tag publishes; workflow_dispatch stops after the build.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/polars-data-profiling
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

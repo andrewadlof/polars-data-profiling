@@ -1,161 +1,111 @@
-[build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools>=72.0.0,<81.0.0",
-    "setuptools-scm>=8.0.0,<9.0.0",
-    "wheel>=0.38.4,<1.0.0"
-]
-
-[packaging]
-package_name = "fg-data-profiling"
-
+# =============================================================================
+#
+# Polars-native data profiling: a fork of fg-data-profiling (formerly
+# ydata-profiling / pandas-profiling) with the pandas and Spark backends replaced
+# by a single Polars engine built on LazyFrames. Profiles run as a handful of
+# batched lazy queries, so a `scan_parquet` / `scan_csv` input is read a few
+# times in total instead of once per column. pandas is not a dependency, direct
+# or transitive.
+# =============================================================================
 [project]
-name = "fg-data-profiling"
-requires-python = ">=3.10,<3.15"
-authors = [
-    {name = "YData Labs Inc", email = "opensource@ydata.ai"}
-]
-description = "Generate profile report for pandas DataFrame"
-keywords = ["pandas", "data-science", "data-analysis", "python", "jupyter", "ipython"]
+name = "polars-data-profiling"
+version = "0.1.0"
+description = "Polars-native, lazy data profiling reports (a pandas-free fork of ydata-profiling)."
 readme = "README.md"
-license = {file = "LICENSE.md"}
+requires-python = ">=3.11"
+keywords = ["data-profiling", "data-quality", "eda", "lazyframe", "polars", "profiling", "report"]
+authors = [{ name = "Drew Adlof", email = "drew.adlof@gmail.com" }]
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Topic :: Software Development :: Build Tools",
-    "License :: OSI Approved :: MIT License",
-    "Environment :: Console",
-    "Operating System :: OS Independent",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Financial and Insurance Industry",
-    "Intended Audience :: Healthcare Industry",
-    "Topic :: Scientific/Engineering",
-    "Framework :: IPython",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Framework :: IPython",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "Typing :: Typed",
 ]
-
 dependencies = [
-    "scipy>=1.8, <1.19.0",
-    "pandas>1.5, <3.0, !=1.4.0",
-    "matplotlib>=3.5, <3.12",
-    "pydantic>=2, <3",
-    "PyYAML>=6.0.3, <6.1",
-    "jinja2>=3.1.6, <3.2",
-    "numpy>=1.22,<2.6",
-    # Could be optional
-    # Related to HTML report
-    "minify-html>=0.15.0",
-    "filetype>=1.0.0",
-    # Correlations
-    "phik>=0.12.5, <0.13",
-    # Examples
-    "requests>=2.32.0, <3",
-    # Progress bar
-    "tqdm>=4.66.3, <5",
-    "seaborn>=0.10.1, <0.14",
-    "multimethod>=1.4, <2",
-    # metrics
-    "statsmodels>=0.13.2, <1",
-    # type checking
-    "typeguard>=4, <5",
-    "imagehash==4.3.2",
-    "wordcloud>=1.9.4",
-    "dacite>=1.9, <2",
-    "numba>=0.60,<0.68",
-]
-
-dynamic = [
-    "version",
+  "filetype>=1.0.0",
+  "jinja2>=3.1.6,<3.2",
+  "minify-html>=0.15.0",
+  "numpy>=1.24",
+  "polars>=2.0",
+  "pydantic-settings>=2.6",
+  "pydantic>=2.12,<3",
+  "pyyaml>=6.0",
+  # chi-squared p-values, Kendall's tau, contingency tests, FFT peak finding
+  "scipy>=1.10",
+  "tqdm>=4.66.3,<5",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "black>=20.8b1",
-    "isort>=5.0.7",
-    "pre-commit>=2.8.2",
-    "virtualenv>=20.0.33",
-    "twine",
-    "wheel",
-    "myst-parser>=0.18.1",
-    "sphinx_rtd_theme>=0.4.3",
-    "sphinx-autodoc-typehints>=1.10.3",
-    "sphinx-multiversion>=0.2.3",
-    "autodoc_pydantic",
-    "standard-imghdr"
-]
-
-docs = [
-    "mkdocs>=1.6.0,<1.7.0",
-    "mkdocs-material>=9.0.12,<10.0.0",
-    "mkdocs-material-extensions>=1.1.1,<2.0.0",
-    "mkdocs-table-reader-plugin<=2.2.0",
-    "mike>=2.1.1,<2.2.0",
-    "mkdocstrings[python]>=0.20.0,<1.0.0",
-    "mkdocs-badges",
-]
-
-notebook = [
-    "jupyter>=1.0.0",
-    "ipywidgets>=7.5.1",
-]
-
-# Recommended pyspark and pyarrow versions for the Spark backend.
-# Extras are additive to the core dependencies, so pandas/numpy must
-# not be restated here: a weaker bound is a no-op, a tighter one silently
-# overrides the core requirement.
-spark = [
-    "pyspark>=4.0, <5",
-    "pyarrow>=4.0.0",
-]
-
-# Arrow inputs (pyarrow, Hugging Face datasets, Polars, DuckDB) and Arrow
-# text kernels. 14.0 is the first pyarrow with the Arrow PyCapsule interface.
-arrow = [
-    "pyarrow>=14.0.0",
-]
-
-test = [
-    "pytest",
-    "coverage>=6.5, <8",
-    "codecov",
-    "pytest-cov",
-    "nbval",
-    "pyarrow",
-    # Arrow-compatible inputs (tests are skipped when missing)
-    "datasets",
-    "polars",
-    "duckdb",
-    "twine>=3.1.1",
-    "kaggle",
-]
-
-unicode= [
-    "tangled-up-in-unicode==0.2.0",
-]
+# Image variables: dimensions, EXIF and perceptual hashes (`vars.image.active`)
+image = ["imagehash>=4.3", "pillow>=10"]
+# Jupyter widgets flavour (`report.to_widgets()`)
+notebook = ["ipywidgets>=8"]
+# Word clouds for text variables (a word-frequency chart is drawn without it)
+wordcloud = ["wordcloud>=1.9.4"]
+# Everything above
+all = ["imagehash>=4.3", "ipywidgets>=8", "pillow>=10", "wordcloud>=1.9.4"]
 
 [project.urls]
-Homepage = "https://ydata.ai"
-Repository = "https://github.com/Data-Centric-AI-Community/fg-data-profiling"
+Homepage = "https://github.com/andrewadlof/polars-data-profiling"
+Repository = "https://github.com/andrewadlof/polars-data-profiling"
+Documentation = "https://andrewadlof.github.io/polars-data-profiling/"
+Issues = "https://github.com/andrewadlof/polars-data-profiling/issues"
+Changelog = "https://github.com/andrewadlof/polars-data-profiling/blob/main/CHANGELOG.md"
 
 [project.scripts]
-data_profiling = "data_profiling.controller.console:main"
-pandas_profiling = "data_profiling.controller.console:main"
+polars_data_profiling = "polars_data_profiling.controller.console:main"
 
-# setuptools relative
+[build-system]
+requires = ["uv_build>=0.8,<0.12"]
+build-backend = "uv_build"
 
-[tool.setuptools]
-include-package-data = true
+[tool.uv.build-backend]
+module-name = "polars_data_profiling"
 
-[tool.setuptools.package-data]
-data_profiling = ["py.typed"]
+[dependency-groups]
+dev = [
+  "mdformat-gfm>=0.4.1",
+  "mdformat>=0.7.22",
+  "pillow>=10",
+  "prek>=0.2.3",
+  "pyarrow>=14",
+  "pytest-cov>=6.2.1",
+  "pytest>=8.4.2",
+  "ruff>=0.12.12",
+  "rust-just>=1.50.0",
+]
+docs = [
+  "mkdocs-api-autonav",
+  "mkdocs-github-admonitions-plugin",
+  "mkdocs-glightbox",
+  "mkdocstrings[python]",
+  "zensical>=0.0.20",
+]
 
-[tool.distutils.bdist_wheel]
-universal = true
+[tool.uv]
+default-groups = ["dev"]
 
-[tool.setuptools.package-dir]
-"" = "src"
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# E501: long strings in templates and messages; B905: zip(strict=) is noise here
+ignore = ["E501", "B905", "SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
